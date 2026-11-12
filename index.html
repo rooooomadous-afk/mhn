@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام متابعة المكاتبات والاستعجالات الإدارية</title>
+<style>
+:root{--navy:#18324b;--blue:#245b83;--bg:#f3f6f9;--line:#dbe3ea;--text:#1f2937;--muted:#64748b;--green:#18794e;--red:#b42318;--amber:#9a6700}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,Arial,sans-serif;color:var(--text)}
+header{background:linear-gradient(120deg,var(--navy),var(--blue));color:#fff;padding:24px 5%;box-shadow:0 3px 12px #0002}header h1{margin:0 0 8px;font-size:24px}header p{margin:0;color:#e4edf5;font-size:14px}
+main{max-width:1400px;margin:22px auto;padding:0 18px}.notice{background:#fff8e6;border:1px solid #f0d58a;border-radius:10px;padding:12px 15px;margin-bottom:16px;font-size:13px;line-height:1.8}
+.toolbar,.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px #0f172a08}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.btn{border:0;border-radius:8px;padding:10px 15px;font-weight:bold;cursor:pointer;font-size:14px}.primary{background:var(--blue);color:#fff}.secondary{background:#e8eef4;color:var(--navy)}.danger{background:#feeceb;color:var(--red)}.btn:disabled{opacity:.45;cursor:not-allowed}input,select,textarea{font:inherit;border:1px solid #cbd5e1;border-radius:7px;padding:9px;background:#fff;color:var(--text)}input[type=file]{max-width:260px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px}.stat span{display:block;color:var(--muted);font-size:13px}.stat strong{font-size:27px;display:block;margin-top:7px}.stat.over strong{color:var(--red)}.stat.done strong{color:var(--green)}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px}.filters input{min-width:220px;flex:1}.filters select{min-width:155px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:1050px;font-size:13px}th,td{border-bottom:1px solid #e7edf2;padding:10px 9px;text-align:right;vertical-align:top}th{background:#f1f5f9;color:#334155;position:sticky;top:0;z-index:1}tr:hover td{background:#fafcff}.status{display:inline-block;border-radius:20px;padding:4px 9px;font-weight:bold;font-size:12px}.s-done{background:#e7f6ed;color:var(--green)}.s-pending{background:#fff4d6;color:var(--amber)}.s-over{background:#feeceb;color:var(--red)}.small{font-size:12px;color:var(--muted)}.empty{text-align:center;padding:28px;color:var(--muted)}
+.modal{display:none;position:fixed;inset:0;background:#0f172a88;z-index:10;align-items:center;justify-content:center;padding:15px}.modal.show{display:flex}.dialog{background:#fff;border-radius:13px;padding:20px;width:min(560px,100%);max-height:90vh;overflow:auto}.dialog h2{margin-top:0}.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:13px;color:#475569}.field input,.field textarea,.field select{width:100%}.dialog-actions{display:flex;gap:8px;justify-content:flex-start;margin-top:18px}.footer{font-size:12px;color:var(--muted);text-align:center;padding:12px}.pill{display:inline-block;background:#edf2f7;padding:4px 8px;border-radius:6px;font-size:12px}
+@media(max-width:750px){.stats{grid-template-columns:repeat(2,1fr)}header h1{font-size:19px}.toolbar>*{flex:1}.toolbar input[type=file]{max-width:none}}
+</style>
+</head>
+<body>
+<header><h1>نظام متابعة المكاتبات والاستعجالات الإدارية</h1><p>نسخة أولية محلية لمتابعة الخطابات والردود والمتأخرات حسب الإدارة ونوع الموضوع</p></header>
+<main>
+<div class="notice"><b>تنبيه خصوصية:</b> هذه النسخة تعالج الملف داخل متصفحك ولا ترفع محتوى Excel إلى خادم. لكنها تحفظ نسخة عمل في مساحة تخزين المتصفح غير المشفرة؛ اختبرها أولًا ببيانات وهمية فقط، ولا تستخدم بيانات حكومية حقيقية إلا على جهاز معتمد ووفق تعليمات أمن المعلومات بالوزارة. مكتبة قراءة Excel تُحمّل من الإنترنت عند فتح الصفحة.</div>
+<section class="toolbar">
+  <input id="fileInput" type="file" accept=".xlsx,.xls" aria-label="اختر ملف Excel">
+  <button class="btn primary" id="importBtn">استيراد جميع الأوراق</button>
+  <button class="btn secondary" id="exportBtn" disabled>تصدير Excel المحدث</button>
+  <button class="btn secondary" id="backupBtn">نسخة احتياطية للمتابعة</button>
+  <button class="btn secondary" id="restoreBtn">استعادة نسخة متابعة</button>
+  <input id="restoreInput" type="file" accept=".json" hidden>
+  <button class="btn danger" id="clearBtn">مسح بيانات هذه النسخة</button>
+</section>
+<section class="stats">
+  <div class="stat"><span>إجمالي الخطابات</span><strong id="totalCount">0</strong></div>
+  <div class="stat done"><span>تم الرد</span><strong id="doneCount">0</strong></div>
+  <div class="stat"><span>لم يتم الرد (داخل المهلة)</span><strong id="pendingCount">0</strong></div>
+  <div class="stat over"><span>متأخر – مطلوب استعجال</span><strong id="overCount">0</strong></div>
+</section>
+<section class="panel">
+  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><b>سجل المتابعة الموحد</b><div class="small" id="sourceInfo">لم يتم استيراد ملف بعد</div></div><span class="pill">مهلة الرد: 48 ساعة — التأخير من بداية اليوم الثالث</span></div>
+  <div class="filters" style="margin-top:14px">
+    <input id="searchInput" placeholder="بحث برقم الخطاب أو الموضوع أو الإدارة...">
+    <select id="adminFilter"><option value="">كل الإدارات</option></select>
+    <select id="typeFilter"><option value="">كل أنواع الموضوعات</option></select>
+    <select id="statusFilter"><option value="">كل الحالات</option><option value="done">تم الرد</option><option value="pending">لم يتم الرد</option><option value="overdue">متأخر</option></select>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>رقم المتابعة</th><th>رقم الخطاب</th><th>تاريخ الإرسال</th><th>الإدارة</th><th>نوع الموضوع</th><th>موضوع الخطاب</th><th>الحالة</th><th>تاريخ الرد</th><th>مدة الانتظار</th><th>إجراء</th></tr></thead><tbody id="tableBody"><tr><td colspan="10" class="empty">يرجى اختيار ملف Excel ثم الضغط على «استيراد جميع الأوراق».</td></tr></tbody></table></div>
+</section>
+<section class="panel">
+  <b>ملخص الاستعجالات حسب الإدارة</b>
+  <p class="small">يعرض هذا القسم عدد الخطابات المتأخرة التي يمكن جمعها في مسودة استعجال واحدة لكل إدارة. إنشاء ملف Word من النموذج المعتمد سيكون في مرحلة لاحقة بعد توفير نسخة قالب خالية من البيانات الحساسة.</p>
+  <div id="chaseSummary" class="empty">لا توجد بيانات للعرض.</div>
+</section>
+<div class="footer">الإصدار التجريبي 0.1 — احفظ نسخة احتياطية بانتظام قبل تحديث بيانات Excel.</div>
+</main>
+<div class="modal" id="editModal"><div class="dialog"><h2>تحديث موقف الخطاب</h2><div id="editMeta" class="small"></div>
+  <div class="field"><label for="editStatus">حالة الرد</label><select id="editStatus"><option value="لم يتم الرد">لم يتم الرد</option><option value="تم الرد">تم الرد</option></select></div>
+  <div class="field"><label for="editReplyDate">تاريخ الرد</label><input id="editReplyDate" type="date"></div>
+  <div class="field"><label for="editNotes">ملاحظات المتابعة</label><textarea id="editNotes" rows="3" placeholder="ملاحظات داخلية غير سرية..."></textarea></div>
+  <div class="dialog-actions"><button class="btn primary" id="saveEdit">حفظ التحديث</button><button class="btn secondary" id="cancelEdit">إلغاء</button></div>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const STORAGE_KEY='correspondence_tracker_v01';
+let records=[];let sourceSheets=[];let currentEditId=null;let sourceFileName='';
+const $=id=>document.getElementById(id);
+function todayISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function norm(v){return String(v??'').trim().replace(/[\u064B-\u065F]/g,'').replace(/\s+/g,' ').toLowerCase()}
+function parseDate(v){if(v===null||v===undefined||v==='')return '';if(v instanceof Date&&!isNaN(v))return v.toISOString().slice(0,10);if(typeof v==='number'&&window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`}let s=String(v).trim();let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;m=s.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;const d=new Date(s);return isNaN(d)?'':new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function dateDiff(a,b){if(!a||!b)return null;return Math.floor((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000)}
+function isDone(r){return norm(r.status)==='تم الرد'||norm(r.status)==='نعم'||norm(r.status)==='yes'}
+function isOverdue(r){return !isDone(r)&&r.sentDate&&dateDiff(r.sentDate,todayISO())>=2}
+function elapsed(r){return r.sentDate?Math.max(0,dateDiff(r.sentDate,todayISO())):null}
+function uid(){return 'TRK-'+String(Math.max(0,...records.map(r=>Number((r.trackerId||'').replace(/\D/g,''))||0))+1).padStart(4,'0')}
+function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({records,sourceSheets,sourceFileName,updatedAt:new Date().toISOString()}))}catch(e){alert('تعذر الحفظ في المتصفح. صدّر نسخة احتياطية فورًا أو قلل حجم البيانات.')}}
+function loadSaved(){try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(x){records=x.records||[];sourceSheets=x.sourceSheets||[];sourceFileName=x.sourceFileName||''}}catch(e){console.warn(e)}render()}
+function headerIndex(headers,patterns){return headers.findIndex(h=>patterns.some(p=>norm(h).includes(norm(p))))}
+function getCell(row,idx){return idx>=0?row[idx]:''}
+async function importWorkbook(){const file=$('fileInput').files[0];if(!file){alert('اختر ملف Excel أولًا.');return}if(!window.XLSX){alert('تعذر تحميل مكتبة قراءة Excel. تحقق من اتصال الإنترنت ثم أعد فتح الصفحة.');return}
+ try{const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array',cellDates:true});const imported=[];const names=[];
+  wb.SheetNames.forEach(sheetName=>{const ws=wb.Sheets[sheetName];const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});if(!rows.length)return;let hi=rows.findIndex(row=>row.some(c=>norm(c).includes('رقم الخطاب')||norm(c).includes('قم الخطاب')));if(hi<0)hi=0;const headers=rows[hi].map(x=>String(x??''));const idx={no:headerIndex(headers,['رقم الخطاب','قم الخطاب']),sent:headerIndex(headers,['تاريخ الإرسال','تاريخ الارسال']),admin:headerIndex(headers,['الإدارة المحال إليها','الادارة المحال اليها']),subject:headerIndex(headers,['موضوع الخطاب']),status:headerIndex(headers,['هل تم الرد','حالة الرد'])};if(Object.values(idx).some(i=>i<0)){throw new Error(`لم أتعرف على الأعمدة المطلوبة في ورقة «${sheetName}». راجع أسماء الأعمدة.`)}
+   names.push(sheetName);rows.slice(hi+1).forEach((row,n)=>{const no=String(getCell(row,idx.no)??'').trim();if(!no)return;const sent=parseDate(getCell(row,idx.sent));const admin=String(getCell(row,idx.admin)??'').trim();const subject=String(getCell(row,idx.subject)??'').trim();const rawStatus=String(getCell(row,idx.status)??'').trim();const status=norm(rawStatus)==='تم الرد'?'تم الرد':'لم يتم الرد';const old=records.find(r=>String(r.letterNo).trim()===no);imported.push({trackerId:old?.trackerId||'',letterNo:no,sentDate:sent,admin,subject,type:sheetName,status,replyDate:status==='تم الرد'?(old?.replyDate||''):'',notes:old?.notes||'',followups:old?.followups||[],sourceRow:n+hi+2})})
+  });
+  const seen=new Set();for(const r of imported){if(seen.has(r.letterNo))throw new Error(`رقم الخطاب «${r.letterNo}» تكرر في الملف، رغم أن النظام يعتمد أنه فريد.`);seen.add(r.letterNo)}
+  const oldByNo=new Map(records.map(r=>[String(r.letterNo).trim(),r]));let nextTracker=Math.max(0,...records.map(r=>Number(String(r.trackerId||'').replace(/\D/g,''))||0))+1;records=imported.map(r=>({...r,trackerId:oldByNo.get(r.letterNo)?.trackerId||('TRK-'+String(nextTracker++).padStart(4,'0'))}));sourceSheets=names;sourceFileName=file.name;persist();$('exportBtn').disabled=records.length===0;$('sourceInfo').textContent=`الملف: ${file.name} — الأوراق المستوردة: ${names.length} — عدد الخطابات: ${records.length}`;render();alert(`تم استيراد ${records.length} خطابًا من ${names.length} أوراق عمل.`)
+ }catch(e){alert('لم يكتمل الاستيراد: '+e.message)}
+}
+function render(){const total=records.length,done=records.filter(isDone).length,over=records.filter(isOverdue).length,pending=total-done-over;$('totalCount').textContent=total;$('doneCount').textContent=done;$('pendingCount').textContent=pending;$('overCount').textContent=over;$('exportBtn').disabled=total===0;
+ const admins=[...new Set(records.map(r=>r.admin).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));const types=[...new Set(records.map(r=>r.type).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));fillSelect('adminFilter',admins,'كل الإدارات');fillSelect('typeFilter',types,'كل أنواع الموضوعات');
+ const q=norm($('searchInput').value),af=$('adminFilter').value,tf=$('typeFilter').value,sf=$('statusFilter').value;const list=records.filter(r=>{const hay=norm([r.letterNo,r.subject,r.admin,r.trackerId].join(' '));return(!q||hay.includes(q))&&(!af||r.admin===af)&&(!tf||r.type===tf)&&(!sf||(sf==='done'&&isDone(r))||(sf==='pending'&&!isDone(r)&&!isOverdue(r))||(sf==='overdue'&&isOverdue(r))) });
+ $('tableBody').innerHTML=list.length?list.map(r=>{const state=isDone(r)?'<span class="status s-done">تم الرد</span>':isOverdue(r)?'<span class="status s-over">متأخر</span>':'<span class="status s-pending">لم يتم الرد</span>';const days=elapsed(r);return `<tr><td>${esc(r.trackerId)}</td><td>${esc(r.letterNo)}</td><td>${esc(r.sentDate)}</td><td>${esc(r.admin)}</td><td>${esc(r.type)}</td><td>${esc(r.subject)}</td><td>${state}</td><td>${esc(r.replyDate||'—')}</td><td>${days===null?'—':days+' يوم'}</td><td><button class="btn secondary" onclick="openEdit('${encodeURIComponent(r.trackerId)}')">تحديث</button> <button class="btn secondary" onclick="logFollowup('${encodeURIComponent(r.trackerId)}')">تسجيل استعجال</button></td></tr>`}).join(''):'<tr><td colspan="10" class="empty">لا توجد نتائج مطابقة.</td></tr>';
+ const groups={};records.filter(isOverdue).forEach(r=>{const k=r.admin||'إدارة غير محددة';groups[k]=(groups[k]||0)+1});const keys=Object.keys(groups).sort((a,b)=>a.localeCompare(b,'ar'));$('chaseSummary').innerHTML=keys.length?'<table style="min-width:0"><thead><tr><th>الإدارة</th><th>عدد الخطابات المتأخرة</th><th>الإجراء المقترح</th></tr></thead><tbody>'+keys.map(k=>`<tr><td>${esc(k)}</td><td>${groups[k]}</td><td>تجهيز مسودة استعجال مجمعة</td></tr>`).join('')+'</tbody></table>':'لا توجد خطابات متأخرة حاليًا.';
+}
+function fillSelect(id,items,first){const el=$(id),v=el.value;el.innerHTML=`<option value="">${first}</option>`+items.map(x=>`<option value="${escAttr(x)}">${esc(x)}</option>`).join('');if(items.includes(v))el.value=v}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function escAttr(s){return esc(s)}
+window.logFollowup=function(encoded){const id=decodeURIComponent(encoded);const r=records.find(x=>x.trackerId===id);if(!r)return;const d=prompt('أدخل تاريخ الاستعجال بصيغة YYYY-MM-DD:',todayISO());if(d===null)return;const date=parseDate(d);if(!date){alert('صيغة التاريخ غير صحيحة.');return}const note=prompt('ملاحظات عن الاستعجال (اختياري):','')||'';r.followups=r.followups||[];r.followups.push({date,note});persist();render();alert('تم تسجيل الاستعجال في سجل المتابعة.')};
+window.openEdit=function(encoded){const id=decodeURIComponent(encoded);const r=records.find(x=>x.trackerId===id);if(!r)return;currentEditId=id;$('editMeta').textContent=`${r.trackerId} — رقم الخطاب: ${r.letterNo} — ${r.admin}`;$('editStatus').value=r.status;$('editReplyDate').value=r.replyDate||'';$('editNotes').value=r.notes||'';$('editModal').classList.add('show')}
+function closeEdit(){$('editModal').classList.remove('show');currentEditId=null}
+$('saveEdit').onclick=()=>{const r=records.find(x=>x.trackerId===currentEditId);if(!r)return;const s=$('editStatus').value,d=$('editReplyDate').value;if(s==='تم الرد'&&!d){alert('أدخل تاريخ الرد عند اختيار «تم الرد».');return}if(s==='لم يتم الرد'&&d){alert('امسح تاريخ الرد أو غيّر الحالة إلى «تم الرد».');return}r.status=s;r.replyDate=d;r.notes=$('editNotes').value.trim();persist();render();closeEdit()};$('cancelEdit').onclick=closeEdit;
+function exportWorkbook(){if(!window.XLSX||!records.length)return;const wb=XLSX.utils.book_new();const sheets=[...new Set(records.map(r=>r.type))];sheets.forEach(type=>{const rows=records.filter(r=>r.type===type).map((r,i)=>({'م':i+1,'رقم الخطاب':r.letterNo,'تاريخ الإرسال':r.sentDate,'الإدارة المحال إليها':r.admin,'موضوع الخطاب':r.subject,'هل تم الرد أم لا؟':r.status,'تاريخ الرد':r.replyDate,'رقم المتابعة':r.trackerId,'عدد مرات الاستعجال':r.followups.length,'ملاحظات المتابعة':r.notes}));const ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,(type||'بيانات').slice(0,31))});const chase=[];records.forEach(r=>r.followups.forEach(f=>chase.push({'رقم المتابعة':r.trackerId,'رقم الخطاب':r.letterNo,'الإدارة':r.admin,'تاريخ الاستعجال':f.date,'ملاحظات':f.note||''})));if(chase.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(chase),'سجل الاستعجالات');XLSX.writeFile(wb,'متابعة_المكاتبات_محدث.xlsx')}
+function backup(){const blob=new Blob([JSON.stringify({records,sourceSheets,sourceFileName,backupAt:new Date().toISOString()},null,2)],{type:'application/json'});downloadBlob(blob,'نسخة_احتياطية_للمتابعة.json')}
+function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('restoreBtn').onclick=()=>$('restoreInput').click();$('restoreInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.records))throw new Error('ملف النسخة الاحتياطية غير صحيح');records=x.records;sourceSheets=x.sourceSheets||[];sourceFileName=x.sourceFileName||'';persist();render();$('sourceInfo').textContent='تمت استعادة نسخة متابعة محفوظة.';alert('تمت الاستعادة بنجاح.')}catch(err){alert('تعذر استعادة النسخة: '+err.message)}e.target.value=''};
+$('clearBtn').onclick=()=>{if(confirm('هل تريد مسح بيانات المتابعة المحفوظة في هذا المتصفح؟ تأكد من تصدير نسخة احتياطية أولًا.')){records=[];sourceSheets=[];sourceFileName='';localStorage.removeItem(STORAGE_KEY);$('sourceInfo').textContent='تم مسح بيانات النسخة المحلية.';render()}};
+$('importBtn').onclick=importWorkbook;$('exportBtn').onclick=exportWorkbook;$('backupBtn').onclick=backup;['searchInput','adminFilter','typeFilter','statusFilter'].forEach(id=>$(id).addEventListener(id==='searchInput'?'input':'change',render));
+loadSaved();
+</script>
+</body>
+</html>
